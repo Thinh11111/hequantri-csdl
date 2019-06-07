@@ -1,0 +1,71 @@
+2.1-	T?o view V1 cho bi?t tên khoa có sinh viên có di?m trung bình cao nh?t?
+create view V1
+as
+	select top 1 with ties k.tenkh, AVG(d.diem) as DTB
+	from monhoc m, diem d, khoa k
+	where m.mamh=d.mamh and m.makh=k.makh
+	group by k.tenkh
+	order by  AVG(d.diem) desc
+select * from V1
+2.2-	T?o view V2 cho bi?t tên các l?p có s? lu?ng sv l?n th? 2?
+alter view V2 
+as 
+	select top 1 with ties l.tenlop, COUNT(s.masv) as slsv
+	from lop l, sinhvien s
+	where l.malop=s.malop and l.malop not in (	select top 1 with ties malop
+									from sinhvien
+									group by malop
+									order by COUNT(masv) desc)
+	group by l.tenlop
+	order by slsv
+select * from V2
+2.3-	T?o procedure P1 th?c hi?n các yêu c?u sau : Nh?n vào mã khoa và tr? v? di?m trung bình c?a sinh viên trong khoa dó,
+ vi?t do?n chuong trình ch?y và hi?n th? k?t qu? tr? v?.
+ alter  proc P1 @mk nvarchar(10)
+ as
+	select ten, tenkh,  AVG(d.diem) as DTB 
+	from	sinhvien s, diem d, monhoc m, khoa k
+	where s.masv=d.masv and m.makh=k.makh and m.mamh=d.mamh and k.makh=@mk
+	group by ten, tenkh
+exec P1 qtkd
+
+
+2.4-	T?o procedure P2 th?c hi?n các yêu c?u sau: Nh?n vào tên môn h?c và hi?n th? danh sách các sinh viên thu?c khoa có môn h?c 
+này mà chua thi d?u môn này (n?u có thi l?n 2 và thi d?u thì tính là dã thi d?u).
+alter proc P2 @tmh nvarchar(10)
+as
+	select ten, tenkh, diem, lan, tenmh
+	from monhoc m, sinhvien s, khoa k, diem d
+ 	where m.makh= k.makh and s.masv=d.masv and m.mamh=d.mamh and m.tenmh = @tmh
+exec P2 'tin hoc 01'
+2.5-	T?o function F1 th?c hi?n các yêu c?u sau: Nh?n vào mã sinh viên và in ra b?ng di?m c?a sinh viên dó g?m
+ (mã sinh viên, mã môn h?c, di?m). (n?u sinh viên có di?m l?n 2 thì ch? hi?n th? di?m l?n 2, n?u chua có di?m môn dó th? hi?n th? di?m 0).
+
+create function F1 (@msv nvarchar(10))
+returns table
+begin 
+	
+
+2.6-	T?o function F2 th?c hi?n các yêu c?u sau: nh?n vào mã khoa, tr? v? là m?t table ch?a các thông tin 
+(mã sinh viên, tên sinh viên, di?m trung bình) c?a nh?ng sinh viên thu?c khoa truy?n vào và dã thi t?t c? các môn và không có thi l?i l?n 2.
+
+2.7-	T?o trigger T1 ki?m tra ràng bu?c: ch? cho phép nh?p di?m thi l?n 2 nh?ng sinh viên chua thi l?n 2 và dã thi l?n 1 môn h?c dó.
+alter trigger T1 on diem
+for insert, update
+as
+	if exists (select * from inserted a where lan = 2 )
+	begin
+		print'loi'
+		rollback tran
+end
+insert into diem values ('a007','th02',1,1,2)
+2.8-	T?o trigger T2 ki?m tra ràng bu?c: sinh viên khoa nào thì ch? h?c nh?ng môn thu?c khoa dó qu?n lý
+alter trigger T2 on sinhvien
+for insert, update
+as
+	if exists (select * from inserted a, khoa k, monhoc m where  k.makh = m.makh  )
+	begin 
+		print'loi'
+		rollback tran
+end 
+select * from monhoc
